@@ -304,52 +304,96 @@ function parseReceiptText(text) {
     const items = [];
     const lines = text.split('\n');
 
-    // Common grocery patterns
-    const foodKeywords = [
-        'milk', 'bread', 'egg', 'cheese', 'butter', 'yogurt', 'cream',
-        'chicken', 'beef', 'pork', 'fish', 'salmon', 'turkey', 'bacon',
-        'apple', 'banana', 'orange', 'grape', 'berr', 'lettuce', 'tomato',
-        'carrot', 'onion', 'potato', 'pepper', 'broccoli', 'spinach',
-        'rice', 'pasta', 'cereal', 'flour', 'sugar', 'oil', 'sauce',
-        'juice', 'soda', 'water', 'coffee', 'tea'
-    ];
-
-    // Skip patterns (non-food items)
+    // Patterns to skip (receipt metadata, not food items)
     const skipPatterns = [
-        /total/i, /subtotal/i, /tax/i, /payment/i, /cash/i, /card/i,
-        /change/i, /balance/i, /thank/i, /receipt/i, /store/i,
-        /date/i, /time/i, /clerk/i, /register/i, /^[\d\s\$\.]+$/,
-        /discount/i, /coupon/i, /savings/i
+        /^total/i, /^subtotal/i, /^tax/i, /tax paid/i, /^payment/i, /^cash/i, /^card/i,
+        /^change/i, /^balance/i, /thank you/i, /^receipt/i, /^store/i,
+        /^\d{1,2}\/\d{1,2}\/\d{2,4}/, /^\d{1,2}:\d{2}/, /^time:/i, /^date:/i,
+        /^clerk/i, /^register/i, /^cashier/i, /discount/i, /^coupon/i, /^savings/i,
+        /^visa/i, /^mastercard/i, /^amex/i, /^discover/i, /^credit/i, /^debit/i,
+        /^approved/i, /^declined/i, /^invoice/i, /^transaction/i, /^auth/i,
+        /^mid:/i, /^rrn:/i, /^aid:/i, /^tvr:/i, /^tsi:/i, /^entry method/i,
+        /^service center/i, /^customer/i, /^phone/i, /^address/i, /^zip/i,
+        /^reward/i, /^member/i, /^bag fee/i, /^bottle/i, /^can deposit/i,
+        /^[\d\s\$\.\*\-_]+$/, // Only numbers, dollars, spaces, asterisks
+        /^[W\s\*]+$/, /^[M\s\*]+$/, // Lines with just W or M (weight markers)
+        /^\d+\s*@\s*\$/, // Quantity pricing lines like "3 @ $0.75"
+        /^\$[\d\.]+\s*$/, // Lines that are just prices
+        /^[\*\s]+$/ // Lines with just asterisks
     ];
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.length < 3) continue;
+    // Common non-food receipt words to remove from item names
+    const cleanupWords = /\b(organic|fresh|local|premium|select|choice|grade a|pkg|pack|ea|each|ct|count)\b/gi;
 
-        // Skip if matches skip patterns
-        if (skipPatterns.some(pattern => pattern.test(trimmed))) continue;
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line || line.length < 3) continue;
 
-        // Check if line contains food keywords
-        const lowerLine = trimmed.toLowerCase();
-        const hasFood = foodKeywords.some(keyword => lowerLine.includes(keyword));
+        // Skip lines that match skip patterns
+        if (skipPatterns.some(pattern => pattern.test(line))) continue;
 
-        if (hasFood) {
-            // Clean up the line (remove prices, quantities, etc.)
-            let itemName = trimmed
-                .replace(/\$?[\d,]+\.?\d*/g, '')  // Remove prices
-                .replace(/\d+\s*(oz|lb|g|kg|ml|l)/gi, '')  // Remove quantities
-                .replace(/[^\w\s]/g, ' ')  // Remove special chars
-                .replace(/\s+/g, ' ')  // Normalize spaces
-                .trim();
+        // Skip lines that are too short or too long (likely not product names)
+        if (line.length < 3 || line.length > 100) continue;
 
-            if (itemName.length > 2) {
-                items.push(itemName);
-            }
-        }
+        // Skip lines that are mostly numbers
+        const numCount = (line.match(/\d/g) || []).length;
+        if (numCount > line.length * 0.6) continue;
+
+        // Extract item name by removing common receipt artifacts
+        let itemName = line
+            // Remove prices with dollar signs
+            .replace(/\$\s*[\d,]+\.?\d*/g, '')
+            // Remove standalone numbers that look like prices
+            .replace(/\s+[\d,]+\.?\d{2}\s*\*?\s*$/g, '')
+            // Remove weight/quantity info (e.g., "0.59 lb @", "16 OZ")
+            .replace(/\d+\.?\d*\s*(lb|oz|g|kg|ml|l|ct)\s*@?\s*[\d\.\$\/]+/gi, '')
+            // Remove weight markers like "W" or "M"
+            .replace(/\s+[WM]\s*$/gi, '')
+            // Remove asterisks
+            .replace(/\*/g, '')
+            // Remove department codes (e.g., "HRD", "BE", "EE")
+            .replace(/^(HRD|BE|EE|WRAPPD|SH-ON|an|a)\s+/gi, '')
+            .replace(/\s+(HRD|BE|EE|MW|He|aut|TR)$/gi, '')
+            // Remove "FOR" pricing (e.g., "2 FOR")
+            .replace(/\d+\s+FOR\s+[\d\.]+/gi, '')
+            // Remove quantity at start (e.g., "3 @", "2 @")
+            .replace(/^\d+\s*@\s*/g, '')
+            // Remove bulk/weight pricing
+            .replace(/\d+\.\d{2}\/lb/gi, '')
+            // Remove cleanup words
+            .replace(cleanupWords, '')
+            // Remove extra special characters but keep hyphens and apostrophes
+            .replace(/[^\w\s\-'\/]/g, ' ')
+            // Normalize spaces
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        // Skip if cleaning removed everything or left very little
+        if (!itemName || itemName.length < 3) continue;
+
+        // Skip if it's still just numbers or single letters
+        if (/^[\d\s]+$/.test(itemName) || /^[A-Z]\s*$/.test(itemName)) continue;
+
+        // Convert to title case for better readability
+        itemName = itemName
+            .toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        // Add to items list
+        items.push(itemName);
     }
 
-    // Remove duplicates
-    return [...new Set(items)];
+    // Remove duplicates and filter out very short items
+    const uniqueItems = [...new Set(items)].filter(item => item.length >= 3);
+
+    // If we got very few items, be more lenient (might have missed some)
+    if (uniqueItems.length < 5) {
+        console.log('Low item count detected. Consider manual entry.');
+    }
+
+    return uniqueItems;
 }
 
 function extractDateFromReceipt(text) {
@@ -382,23 +426,17 @@ function extractDateFromReceipt(text) {
 
 function addManualItem() {
     const name = document.getElementById('food-name').value.trim();
-    let category = document.getElementById('category').value;
     const purchaseDate = document.getElementById('purchase-date').value;
     const quantity = parseInt(document.getElementById('quantity').value);
     const isOpened = document.getElementById('is-opened').checked;
 
-    // Look up food data automatically
+    // Look up food data automatically (category and shelf life)
     const foodData = findFoodData(name);
-
-    // If user selected a category, use it; otherwise use the looked up category
-    if (category === 'other' || !category) {
-        category = foodData.category;
-    }
 
     const item = {
         id: generateId(),
         name,
-        category,
+        category: foodData.category,
         purchaseDate,
         unopenedDays: foodData.unopened,
         openedDays: foodData.opened,
@@ -542,6 +580,12 @@ function renderInventory(filter = null) {
             openBtn.addEventListener('click', () => markAsOpened(item.id));
         }
 
+        // Mark as unopened (undo) button
+        const undoBtn = document.getElementById(`undo-open-${item.id}`);
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => markAsUnopened(item.id));
+        }
+
         // Delete button
         const deleteBtn = document.getElementById(`delete-${item.id}`);
         if (deleteBtn) {
@@ -564,7 +608,8 @@ function createFoodItemHTML(item) {
                     <span class="category-badge">${getCategoryLabel(item.category)}</span>
                 </div>
                 <div class="food-item-actions">
-                    ${!item.isOpened ? `<button class="btn btn-secondary" id="open-${item.id}">Mark as Opened</button>` : ''}
+                    ${!item.isOpened && item.unopenedDays !== item.openedDays ? `<button class="btn btn-secondary" id="open-${item.id}">Mark as Opened</button>` : ''}
+                    ${item.isOpened && item.unopenedDays !== item.openedDays ? `<button class="btn btn-secondary" id="undo-open-${item.id}">Mark as Unopened</button>` : ''}
                     <button class="btn btn-danger" id="delete-${item.id}">Delete</button>
                 </div>
             </div>
@@ -652,6 +697,19 @@ function markAsOpened(itemId) {
         saveInventory(inventory);
         renderInventory();
         showNotification(`✓ ${item.name} marked as opened`, 'success');
+    }
+}
+
+function markAsUnopened(itemId) {
+    const inventory = getInventory();
+    const item = inventory.find(i => i.id === itemId);
+
+    if (item) {
+        item.isOpened = false;
+        item.openedDate = null;
+        saveInventory(inventory);
+        renderInventory();
+        showNotification(`✓ ${item.name} marked as unopened`, 'success');
     }
 }
 
