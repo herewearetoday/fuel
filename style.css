@@ -676,17 +676,15 @@ code {
     background: white;
     border: 2px solid var(--primary-color);
     border-radius: 50%;
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 0;
-    gap: 2px;
 }
 
 .voice-btn:hover {
@@ -697,14 +695,6 @@ code {
 
 .voice-btn svg {
     color: var(--primary-color);
-    width: 20px;
-    height: 20px;
-}
-
-.voice-status {
-    font-size: 0.65rem;
-    color: var(--primary-color);
-    font-weight: 600;
 }
 
 .voice-btn.recording {
@@ -713,8 +703,7 @@ code {
     animation: pulse 1.5s infinite;
 }
 
-.voice-btn.recording svg,
-.voice-btn.recording .voice-status {
+.voice-btn.recording svg {
     color: white;
 }
 

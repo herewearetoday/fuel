@@ -108,7 +108,6 @@ function initializeVoiceRecognition() {
     recognition.onstart = () => {
         isRecording = true;
         voiceBtn.classList.add('recording');
-        voiceBtn.querySelector('.voice-status').textContent = 'Stop';
         voiceHelp.style.display = 'block';
         finalTranscript = textarea.value;
     };
@@ -179,7 +178,6 @@ function initializeVoiceRecognition() {
     function stopRecording() {
         isRecording = false;
         voiceBtn.classList.remove('recording');
-        voiceBtn.querySelector('.voice-status').textContent = 'Dictate';
         voiceHelp.style.display = 'none';
 
         try {
@@ -195,8 +193,27 @@ function initializeVoiceRecognition() {
     }
 
     function cleanTranscript(text) {
-        return text
-            .split('\n')
+        // Split by newlines and also by common separators (commas, "and", pauses)
+        let items = text.split(/[\n,]|(?:\s+and\s+)/i);
+
+        // Further split by detecting multiple food words in sequence
+        const expandedItems = [];
+        items.forEach(item => {
+            const words = item.trim().split(/\s+/);
+            if (words.length > 3) {
+                // If too many words, try to split into individual items
+                // Common pattern: "eggs milk bread" -> ["eggs", "milk", "bread"]
+                words.forEach(word => {
+                    if (word.length >= 3) {
+                        expandedItems.push(word);
+                    }
+                });
+            } else {
+                expandedItems.push(item.trim());
+            }
+        });
+
+        return expandedItems
             .map(line => line.trim())
             .filter(line => line.length > 0)
             .map(line => {
@@ -727,7 +744,7 @@ function extractDateFromReceipt(text) {
 
 function addFromReceiptText() {
     const receiptText = document.getElementById('receipt-text').value.trim();
-    let purchaseDate = document.getElementById('receipt-date').value;
+    let purchaseDate = document.getElementById('manual-purchase-date').value;
 
     if (!receiptText) {
         showNotification('Please enter at least one item', 'error');
@@ -849,6 +866,12 @@ function renderInventory(filter = null) {
             undoBtn.addEventListener('click', () => markAsUnopened(item.id));
         }
 
+        // Edit expiry button
+        const editExpiryBtn = document.getElementById(`edit-expiry-${item.id}`);
+        if (editExpiryBtn) {
+            editExpiryBtn.addEventListener('click', () => editExpiryDate(item.id));
+        }
+
         // Delete button
         const deleteBtn = document.getElementById(`delete-${item.id}`);
         if (deleteBtn) {
@@ -939,6 +962,7 @@ function createFoodItemHTML(item) {
                 <div class="food-item-actions">
                     ${!item.isOpened && item.unopenedDays !== item.openedDays ? `<button class="btn btn-secondary" id="open-${item.id}">Mark as Opened</button>` : ''}
                     ${item.isOpened && item.unopenedDays !== item.openedDays ? `<button class="btn btn-secondary" id="undo-open-${item.id}">Mark as Unopened</button>` : ''}
+                    <button class="btn btn-secondary" id="edit-expiry-${item.id}">Edit Expiry</button>
                     <button class="btn btn-danger" id="delete-${item.id}">Delete</button>
                 </div>
             </div>
@@ -1040,6 +1064,51 @@ function markAsUnopened(itemId) {
         renderInventory();
         showNotification(`✓ ${item.name} marked as unopened`, 'success');
     }
+}
+
+function editExpiryDate(itemId) {
+    const inventory = getInventory();
+    const item = inventory.find(i => i.id === itemId);
+
+    if (!item) return;
+
+    // Calculate current expiry date
+    const currentExpiry = calculateExpiryDate(item);
+    const currentExpiryStr = currentExpiry.toISOString().split('T')[0];
+
+    // Prompt for new expiry date
+    const newExpiryStr = prompt(
+        `Edit expiry date for ${item.name}\n\nCurrent expiry: ${formatDate(currentExpiry)}\n\nEnter new expiry date (YYYY-MM-DD):`,
+        currentExpiryStr
+    );
+
+    if (!newExpiryStr) return; // User cancelled
+
+    // Validate date
+    const newExpiry = new Date(newExpiryStr);
+    if (isNaN(newExpiry.getTime())) {
+        showNotification('Invalid date format', 'error');
+        return;
+    }
+
+    // Calculate new shelf life in days from purchase date
+    const purchaseDate = new Date(item.purchaseDate);
+    const daysDiff = Math.ceil((newExpiry - purchaseDate) / (1000 * 60 * 60 * 24));
+
+    // Update the item's shelf life
+    if (item.isOpened) {
+        // If opened, update opened shelf life
+        const openedDate = new Date(item.openedDate);
+        const daysFromOpened = Math.ceil((newExpiry - openedDate) / (1000 * 60 * 60 * 24));
+        item.openedDays = Math.max(1, daysFromOpened);
+    } else {
+        // If unopened, update unopened shelf life
+        item.unopenedDays = Math.max(1, daysDiff);
+    }
+
+    saveInventory(inventory);
+    renderInventory();
+    showNotification(`✓ Expiry date updated for ${item.name}`, 'success');
 }
 
 function deleteItem(itemId) {
