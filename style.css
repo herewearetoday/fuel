@@ -664,6 +664,81 @@ code {
     color: var(--text-dark);
 }
 
+/* Voice Dictation */
+.textarea-with-voice {
+    position: relative;
+}
+
+.voice-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    gap: 2px;
+}
+
+.voice-btn:hover {
+    background: var(--bg-green-light);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.voice-btn svg {
+    color: var(--primary-color);
+    width: 20px;
+    height: 20px;
+}
+
+.voice-status {
+    font-size: 0.65rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.voice-btn.recording {
+    background: var(--danger-color);
+    border-color: var(--danger-color);
+    animation: pulse 1.5s infinite;
+}
+
+.voice-btn.recording svg,
+.voice-btn.recording .voice-status {
+    color: white;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+.voice-help {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg-green-light);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    text-align: center;
+}
+
 /* Info Box */
 .info-box {
     background: var(--bg-green-light);

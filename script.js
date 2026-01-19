@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTabs();
     initializeForms();
     initializeFileUpload();
+    initializeVoiceRecognition();
     setDefaultDates();
     loadInventory();
     setupFilters();
@@ -57,12 +58,6 @@ function initializeTabs() {
 // ===== FORM MANAGEMENT =====
 
 function initializeForms() {
-    // Manual entry form
-    document.getElementById('manual-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        addManualItem();
-    });
-
     // Receipt file upload form
     document.getElementById('receipt-form').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -81,6 +76,134 @@ function setDefaultDates() {
     const purchaseDateInput = document.getElementById('purchase-date');
     if (purchaseDateInput) {
         purchaseDateInput.value = today;
+    }
+}
+
+// ===== VOICE RECOGNITION =====
+
+let recognition = null;
+let isRecording = false;
+
+function initializeVoiceRecognition() {
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceHelp = document.getElementById('voice-help');
+    const textarea = document.getElementById('receipt-text');
+
+    // Check if browser supports speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        voiceBtn.style.display = 'none';
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let finalTranscript = '';
+    let interimTranscript = '';
+
+    recognition.onstart = () => {
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+        voiceBtn.querySelector('.voice-status').textContent = 'Stop';
+        voiceHelp.style.display = 'block';
+        finalTranscript = textarea.value;
+    };
+
+    recognition.onresult = (event) => {
+        interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+
+            if (event.results[i].isFinal) {
+                finalTranscript += (finalTranscript ? '\n' : '') + transcript.trim();
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+
+        // Show interim results in textarea
+        if (interimTranscript) {
+            textarea.value = finalTranscript + (finalTranscript ? '\n' : '') + interimTranscript;
+        } else {
+            textarea.value = finalTranscript;
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        stopRecording();
+
+        if (event.error === 'not-allowed') {
+            showNotification('Microphone access denied. Please allow microphone access.', 'error');
+        } else if (event.error === 'no-speech') {
+            showNotification('No speech detected. Try again.', 'error');
+        } else {
+            showNotification('Voice recognition error. Try again.', 'error');
+        }
+    };
+
+    recognition.onend = () => {
+        if (isRecording) {
+            // Auto-restart if still recording
+            try {
+                recognition.start();
+            } catch (e) {
+                stopRecording();
+            }
+        }
+    };
+
+    voiceBtn.addEventListener('click', () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
+    function startRecording() {
+        try {
+            finalTranscript = textarea.value;
+            recognition.start();
+        } catch (e) {
+            console.error('Error starting recognition:', e);
+            showNotification('Could not start voice recognition', 'error');
+        }
+    }
+
+    function stopRecording() {
+        isRecording = false;
+        voiceBtn.classList.remove('recording');
+        voiceBtn.querySelector('.voice-status').textContent = 'Dictate';
+        voiceHelp.style.display = 'none';
+
+        try {
+            recognition.stop();
+        } catch (e) {
+            // Already stopped
+        }
+
+        // Clean up the transcript
+        if (textarea.value) {
+            textarea.value = cleanTranscript(textarea.value);
+        }
+    }
+
+    function cleanTranscript(text) {
+        return text
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => {
+                // Capitalize first letter
+                return line.charAt(0).toUpperCase() + line.slice(1);
+            })
+            .join('\n');
     }
 }
 
@@ -601,44 +724,6 @@ function extractDateFromReceipt(text) {
 }
 
 // ===== ADD ITEMS =====
-
-function addManualItem() {
-    const name = document.getElementById('food-name').value.trim();
-    const purchaseDate = document.getElementById('purchase-date').value;
-    const quantity = parseInt(document.getElementById('quantity').value);
-    const isOpened = document.getElementById('is-opened').checked;
-
-    // Look up food data automatically (category and shelf life)
-    const foodData = findFoodData(name);
-
-    const item = {
-        id: generateId(),
-        name,
-        category: foodData.category,
-        purchaseDate,
-        unopenedDays: foodData.unopened,
-        openedDays: foodData.opened,
-        quantity,
-        isOpened,
-        openedDate: isOpened ? purchaseDate : null,
-        addedAt: new Date().toISOString()
-    };
-
-    // Add to inventory
-    const inventory = getInventory();
-    inventory.push(item);
-    saveInventory(inventory);
-
-    // Reset form
-    document.getElementById('manual-form').reset();
-    setDefaultDates();
-
-    // Show success message with shelf life info
-    showNotification(`✓ ${name} added! (${foodData.unopened} days unopened, ${foodData.opened} days opened)`, 'success');
-
-    // Switch to inventory tab
-    switchToInventoryTab();
-}
 
 function addFromReceiptText() {
     const receiptText = document.getElementById('receipt-text').value.trim();

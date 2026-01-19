@@ -22,41 +22,6 @@
         <!-- Add Items Tab (Combined) -->
         <div class="tab-content active" id="add-tab">
             <div class="card">
-                <h2>Add Food Item</h2>
-                <form id="manual-form">
-                    <div class="form-group">
-                        <label for="food-name">Food Name *</label>
-                        <input type="text" id="food-name" required placeholder="e.g., Cottage Cheese, Blueberries, Chicken Breast">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="purchase-date">Purchase Date *</label>
-                            <input type="date" id="purchase-date" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="quantity">Quantity</label>
-                            <input type="number" id="quantity" value="1" min="1">
-                        </div>
-                    </div>
-
-                    <div class="info-box">
-                        <p>ℹ️ Shelf life is automatically estimated based on the food type</p>
-                    </div>
-
-                    <div class="form-group checkbox-group">
-                        <label>
-                            <input type="checkbox" id="is-opened">
-                            Mark as already opened
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Add to Inventory</button>
-                </form>
-            </div>
-
-            <div class="card">
                 <h2>Scan Receipt</h2>
                 <p class="help-text">Upload a photo or PDF of your grocery receipt. The app will automatically extract items and dates!</p>
 
@@ -101,13 +66,25 @@
 
                 <div class="manual-receipt-entry">
                     <h3>Enter Items Manually</h3>
-                    <p class="help-text">Type or paste items from your receipt (one per line)</p>
+                    <p class="help-text">Type, paste, or dictate items from your receipt (one per line)</p>
                     <div class="form-group">
-                        <textarea id="receipt-text" rows="8" placeholder="Milk
+                        <div class="textarea-with-voice">
+                            <textarea id="receipt-text" rows="8" placeholder="Milk
 Eggs
 Bread
 Cottage Cheese
 Blueberries"></textarea>
+                            <button type="button" class="voice-btn" id="voice-btn" title="Click to start voice dictation">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                                <span class="voice-status">Dictate</span>
+                            </button>
+                        </div>
+                        <p class="voice-help" id="voice-help" style="display: none;">🎤 Listening... Say your items (e.g., "Milk, Eggs, Bread")</p>
                     </div>
                     <button type="button" class="btn btn-secondary" id="manual-receipt-btn">Add These Items</button>
                 </div>
