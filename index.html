@@ -15,13 +15,12 @@
 
         <!-- Tab Navigation -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="manual">Add Manually</button>
-            <button class="tab-button" data-tab="receipt">From Receipt</button>
+            <button class="tab-button active" data-tab="add">Add Items</button>
             <button class="tab-button" data-tab="inventory">My Inventory</button>
         </div>
 
-        <!-- Manual Entry Form -->
-        <div class="tab-content active" id="manual-tab">
+        <!-- Add Items Tab (Combined) -->
+        <div class="tab-content active" id="add-tab">
             <div class="card">
                 <h2>Add Food Item</h2>
                 <form id="manual-form">
@@ -56,19 +55,17 @@
                     <button type="submit" class="btn btn-primary">Add to Inventory</button>
                 </form>
             </div>
-        </div>
 
-        <!-- Receipt Entry Form -->
-        <div class="tab-content" id="receipt-tab">
             <div class="card">
                 <h2>Scan Receipt</h2>
                 <p class="help-text">Upload a photo or PDF of your grocery receipt. The app will automatically extract items and dates!</p>
 
                 <form id="receipt-form">
                     <div class="form-group">
-                        <label for="receipt-file">Upload Receipt (Image or PDF) *</label>
+                        <label for="receipt-file">Upload Receipt(s) (Image or PDF)</label>
+                        <p class="help-text-small">Upload multiple receipts or paste an image from your clipboard</p>
                         <div class="file-upload-area" id="file-upload-area">
-                            <input type="file" id="receipt-file" accept="image/*,application/pdf" required>
+                            <input type="file" id="receipt-file" accept="image/*,application/pdf" multiple>
                             <div class="file-upload-placeholder">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -116,6 +113,7 @@ Blueberries"></textarea>
                 </div>
             </div>
         </div>
+        <!-- End Add Items Tab -->
 
         <!-- Inventory View -->
         <div class="tab-content" id="inventory-tab">

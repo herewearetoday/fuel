@@ -78,7 +78,10 @@ function initializeForms() {
 
 function setDefaultDates() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('purchase-date').value = today;
+    const purchaseDateInput = document.getElementById('purchase-date');
+    if (purchaseDateInput) {
+        purchaseDateInput.value = today;
+    }
 }
 
 // ===== FILE UPLOAD =====
@@ -89,9 +92,36 @@ function initializeFileUpload() {
     const preview = document.getElementById('file-preview');
     const placeholder = uploadArea.querySelector('.file-upload-placeholder');
 
-    // File input change
+    // File input change (handles multiple files)
     fileInput.addEventListener('change', (e) => {
-        handleFileSelect(e.target.files[0]);
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]); // Show preview of first file
+            // Store all files for processing
+            uploadArea.dataset.fileCount = e.target.files.length;
+        }
+    });
+
+    // Paste support for images
+    document.addEventListener('paste', (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file) {
+                    // Set the file to the input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    handleFileSelect(file);
+                    showNotification('📋 Image pasted! Click "Scan Receipt" to process.', 'success');
+                }
+                break;
+            }
+        }
     });
 
     // Drag and drop
@@ -164,9 +194,9 @@ function handleFileSelect(file) {
 
 async function processReceiptFile() {
     const fileInput = document.getElementById('receipt-file');
-    const file = fileInput.files[0];
+    const files = Array.from(fileInput.files);
 
-    if (!file) {
+    if (files.length === 0) {
         showNotification('Please select a receipt image or PDF', 'error');
         return;
     }
@@ -180,20 +210,37 @@ async function processReceiptFile() {
     submitBtn.disabled = true;
 
     try {
-        let text = '';
+        let allText = '';
+        let processedCount = 0;
 
-        if (file.type === 'application/pdf') {
-            processingMessage.textContent = 'Processing PDF...';
-            text = await extractTextFromPDF(file);
-        } else {
-            processingMessage.textContent = 'Scanning receipt...';
-            text = await extractTextFromImage(file);
+        // Process each file
+        for (const file of files) {
+            processedCount++;
+            processingMessage.textContent = `Processing receipt ${processedCount}/${files.length}...`;
+
+            let text = '';
+
+            if (file.type === 'application/pdf') {
+                text = await extractTextFromPDF(file);
+            } else {
+                text = await extractTextFromImage(file);
+            }
+
+            allText += text + '\n';
         }
+
+        const text = allText;
 
         processingMessage.textContent = 'Extracting items...';
 
         // Parse receipt text to extract items
-        const items = parseReceiptText(text);
+        let items = parseReceiptText(text);
+
+        // Apply fuzzy matching to correct OCR errors
+        items = items.map(item => correctItemName(item));
+
+        // Filter out items that couldn't be matched
+        items = items.filter(item => item !== null);
 
         if (items.length === 0) {
             showNotification('No food items found in receipt. Try manual entry.', 'error');
@@ -254,13 +301,73 @@ async function processReceiptFile() {
 }
 
 async function extractTextFromImage(file) {
+    // Preprocess the image for better OCR results
+    const preprocessedImage = await preprocessImageForOCR(file);
+
     const { createWorker } = Tesseract;
     const worker = await createWorker('eng');
 
-    const result = await worker.recognize(file);
+    // Configure for better accuracy with receipts
+    await worker.setParameters({
+        tessedit_pageseg_mode: '6', // Assume uniform block of text
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 /-&',
+    });
+
+    const result = await worker.recognize(preprocessedImage);
     await worker.terminate();
 
     return result.data.text;
+}
+
+async function preprocessImageForOCR(file) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            img.src = e.target.result;
+        };
+
+        img.onload = () => {
+            // Create canvas for preprocessing
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Scale up for better OCR (2x)
+            canvas.width = img.width * 2;
+            canvas.height = img.height * 2;
+
+            // Draw image scaled up
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Get image data for processing
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Apply preprocessing: increase contrast and convert to grayscale
+            for (let i = 0; i < data.length; i += 4) {
+                // Convert to grayscale
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+
+                // Increase contrast (simple threshold)
+                const threshold = 128;
+                const contrasted = gray > threshold ? 255 : 0;
+
+                data[i] = contrasted;     // R
+                data[i + 1] = contrasted; // G
+                data[i + 2] = contrasted; // B
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Convert canvas to blob
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            });
+        };
+
+        reader.readAsDataURL(file);
+    });
 }
 
 async function extractTextFromPDF(file) {
@@ -298,6 +405,77 @@ async function extractTextFromPDF(file) {
     }
 
     return fullText;
+}
+
+// Levenshtein distance for fuzzy matching
+function levenshteinDistance(str1, str2) {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = Array(len1 + 1).fill(null).map(() => Array(len2 + 1).fill(0));
+
+    for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+
+    return matrix[len1][len2];
+}
+
+// Correct OCR errors by fuzzy matching against known foods
+function correctItemName(ocrText) {
+    const cleanText = ocrText.toLowerCase().trim();
+
+    // Get all food names from database
+    const knownFoods = Object.keys(FOOD_DATABASE);
+
+    // Find best match using Levenshtein distance
+    let bestMatch = null;
+    let bestScore = Infinity;
+    const maxDistance = Math.floor(cleanText.length * 0.4); // Allow 40% error
+
+    for (const food of knownFoods) {
+        const distance = levenshteinDistance(cleanText, food);
+
+        // Calculate similarity score (lower is better)
+        const score = distance / Math.max(cleanText.length, food.length);
+
+        if (distance <= maxDistance && distance < bestScore) {
+            bestScore = distance;
+            bestMatch = food;
+        }
+
+        // Also check if OCR text contains the food name
+        if (cleanText.includes(food) || food.includes(cleanText.split(' ')[0])) {
+            if (distance < bestScore) {
+                bestScore = distance;
+                bestMatch = food;
+            }
+        }
+    }
+
+    // If we found a reasonable match, return it
+    if (bestMatch && bestScore <= maxDistance) {
+        // Convert to title case
+        return bestMatch.split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+    }
+
+    // If no match found but the text looks like a food name, keep it
+    if (cleanText.length >= 4 && /^[a-z\s]+$/.test(cleanText)) {
+        return ocrText;
+    }
+
+    return null; // Filter out
 }
 
 function parseReceiptText(text) {
@@ -594,15 +772,81 @@ function renderInventory(filter = null) {
     });
 }
 
+// Get emoji icon for food item
+function getFoodEmoji(itemName, category) {
+    const name = itemName.toLowerCase();
+
+    // Specific foods
+    if (name.includes('milk')) return '🥛';
+    if (name.includes('cheese')) return '🧀';
+    if (name.includes('yogurt')) return '🥛';
+    if (name.includes('butter')) return '🧈';
+    if (name.includes('egg')) return '🥚';
+
+    if (name.includes('apple')) return '🍎';
+    if (name.includes('banana')) return '🍌';
+    if (name.includes('orange')) return '🍊';
+    if (name.includes('grape')) return '🍇';
+    if (name.includes('strawberr') || name.includes('berr')) return '🍓';
+    if (name.includes('blueberr')) return '🫐';
+    if (name.includes('watermelon')) return '🍉';
+    if (name.includes('lemon')) return '🍋';
+    if (name.includes('avocado')) return '🥑';
+    if (name.includes('grapefruit')) return '🍊';
+
+    if (name.includes('carrot')) return '🥕';
+    if (name.includes('tomato')) return '🍅';
+    if (name.includes('pepper')) return '🫑';
+    if (name.includes('lettuce') || name.includes('salad') || name.includes('greens')) return '🥬';
+    if (name.includes('broccoli')) return '🥦';
+    if (name.includes('cucumber')) return '🥒';
+    if (name.includes('onion')) return '🧅';
+    if (name.includes('garlic')) return '🧄';
+    if (name.includes('potato')) return '🥔';
+    if (name.includes('mushroom')) return '🍄';
+    if (name.includes('corn')) return '🌽';
+
+    if (name.includes('chicken')) return '🍗';
+    if (name.includes('beef') || name.includes('steak')) return '🥩';
+    if (name.includes('bacon')) return '🥓';
+    if (name.includes('shrimp')) return '🍤';
+    if (name.includes('fish') || name.includes('salmon')) return '🐟';
+
+    if (name.includes('bread')) return '🍞';
+    if (name.includes('rice')) return '🍚';
+    if (name.includes('pasta')) return '🍝';
+    if (name.includes('pizza')) return '🍕';
+
+    if (name.includes('juice')) return '🧃';
+    if (name.includes('water')) return '💧';
+    if (name.includes('coffee')) return '☕';
+    if (name.includes('tea')) return '🍵';
+
+    if (name.includes('kimchi')) return '🥬';
+    if (name.includes('squash')) return '🎃';
+
+    // Category defaults
+    if (category === 'dairy') return '🥛';
+    if (category === 'produce') return '🥗';
+    if (category === 'meat') return '🍖';
+    if (category === 'pantry') return '🥫';
+    if (category === 'frozen') return '🧊';
+    if (category === 'beverages') return '🥤';
+
+    return '🍽️'; // Default
+}
+
 function createFoodItemHTML(item) {
     const status = calculateStatus(item);
     const expiryDate = calculateExpiryDate(item);
     const daysLeft = calculateDaysLeft(expiryDate);
     const statusText = getStatusText(status, daysLeft);
+    const emoji = getFoodEmoji(item.name, item.category);
 
     return `
         <div class="food-item status-${status}">
             <div class="food-item-header">
+                <div class="food-icon">${emoji}</div>
                 <div class="food-item-title">
                     <h3>${escapeHtml(item.name)}</h3>
                     <span class="category-badge">${getCategoryLabel(item.category)}</span>
@@ -714,8 +958,6 @@ function markAsUnopened(itemId) {
 }
 
 function deleteItem(itemId) {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
     const inventory = getInventory();
     const itemIndex = inventory.findIndex(i => i.id === itemId);
 
