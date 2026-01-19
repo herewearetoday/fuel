@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Inventory Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍎 Food Inventory Tracker</h1>
+            <p class="subtitle">Track your groceries and never waste food again</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="manual">Add Manually</button>
+            <button class="tab-button" data-tab="receipt">From Receipt</button>
+            <button class="tab-button" data-tab="inventory">My Inventory</button>
+        </div>
+
+        <!-- Manual Entry Form -->
+        <div class="tab-content active" id="manual-tab">
+            <div class="card">
+                <h2>Add Food Item</h2>
+                <form id="manual-form">
+                    <div class="form-group">
+                        <label for="food-name">Food Name *</label>
+                        <input type="text" id="food-name" required placeholder="e.g., Cottage Cheese">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category">
+                            <option value="dairy">Dairy</option>
+                            <option value="produce">Produce</option>
+                            <option value="meat">Meat & Seafood</option>
+                            <option value="pantry">Pantry</option>
+                            <option value="frozen">Frozen</option>
+                            <option value="beverages">Beverages</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="purchase-date">Purchase Date *</label>
+                            <input type="date" id="purchase-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unopened-days">Unopened Shelf Life (days) *</label>
+                            <input type="number" id="unopened-days" required placeholder="e.g., 60" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="opened-days">Opened Shelf Life (days) *</label>
+                            <input type="number" id="opened-days" required placeholder="e.g., 7" min="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" value="1" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="is-opened">
+                            Mark as already opened
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add to Inventory</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Receipt Entry Form -->
+        <div class="tab-content" id="receipt-tab">
+            <div class="card">
+                <h2>Add from Receipt</h2>
+                <p class="help-text">Enter each item on a new line. Format: <code>Item Name, Unopened Days, Opened Days</code></p>
+                <p class="help-text">Example: <code>Milk, 14, 7</code> or just <code>Milk</code> (defaults: 30 unopened, 7 opened)</p>
+
+                <form id="receipt-form">
+                    <div class="form-group">
+                        <label for="receipt-date">Purchase Date *</label>
+                        <input type="date" id="receipt-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="receipt-text">Items (one per line) *</label>
+                        <textarea id="receipt-text" rows="10" placeholder="Milk, 14, 7
+Eggs, 21, 14
+Bread, 7, 5
+Cottage Cheese, 60, 7" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add All Items</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Inventory View -->
+        <div class="tab-content" id="inventory-tab">
+            <div class="inventory-controls">
+                <div class="search-box">
+                    <input type="text" id="search" placeholder="Search items...">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-status">
+                        <option value="all">All Items</option>
+                        <option value="fresh">Fresh</option>
+                        <option value="warning">Expiring Soon</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                    <select id="filter-category">
+                        <option value="all">All Categories</option>
+                        <option value="dairy">Dairy</option>
+                        <option value="produce">Produce</option>
+                        <option value="meat">Meat & Seafood</option>
+                        <option value="pantry">Pantry</option>
+                        <option value="frozen">Frozen</option>
+                        <option value="beverages">Beverages</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card fresh">
+                    <h3 id="fresh-count">0</h3>
+                    <p>Fresh Items</p>
+                </div>
+                <div class="stat-card warning">
+                    <h3 id="warning-count">0</h3>
+                    <p>Expiring Soon</p>
+                </div>
+                <div class="stat-card expired">
+                    <h3 id="expired-count">0</h3>
+                    <p>Expired</p>
+                </div>
+            </div>
+
+            <div id="inventory-list" class="inventory-list">
+                <div class="empty-state">
+                    <p>No items in your inventory yet.</p>
+                    <p>Add items manually or from a receipt to get started!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
