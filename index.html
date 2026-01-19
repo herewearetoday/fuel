@@ -50,21 +50,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="unopened-days">Unopened Shelf Life (days) *</label>
-                            <input type="number" id="unopened-days" required placeholder="e.g., 60" min="1">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="opened-days">Opened Shelf Life (days) *</label>
-                            <input type="number" id="opened-days" required placeholder="e.g., 7" min="1">
-                        </div>
-
-                        <div class="form-group">
                             <label for="quantity">Quantity</label>
                             <input type="number" id="quantity" value="1" min="1">
                         </div>
+                    </div>
+
+                    <div class="info-box">
+                        <p>ℹ️ Shelf life is automatically estimated based on the food type</p>
                     </div>
 
                     <div class="form-group checkbox-group">
@@ -82,26 +74,59 @@
         <!-- Receipt Entry Form -->
         <div class="tab-content" id="receipt-tab">
             <div class="card">
-                <h2>Add from Receipt</h2>
-                <p class="help-text">Enter each item on a new line. Format: <code>Item Name, Unopened Days, Opened Days</code></p>
-                <p class="help-text">Example: <code>Milk, 14, 7</code> or just <code>Milk</code> (defaults: 30 unopened, 7 opened)</p>
+                <h2>Scan Receipt</h2>
+                <p class="help-text">Upload a photo or PDF of your grocery receipt. The app will automatically extract items and dates!</p>
 
                 <form id="receipt-form">
                     <div class="form-group">
-                        <label for="receipt-date">Purchase Date *</label>
-                        <input type="date" id="receipt-date" required>
+                        <label for="receipt-file">Upload Receipt (Image or PDF) *</label>
+                        <div class="file-upload-area" id="file-upload-area">
+                            <input type="file" id="receipt-file" accept="image/*,application/pdf" required>
+                            <div class="file-upload-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p><strong>Click to upload</strong> or drag and drop</p>
+                                <p class="small">PNG, JPG, PDF (Max 10MB)</p>
+                            </div>
+                            <div class="file-upload-preview" id="file-preview" style="display: none;">
+                                <img id="preview-image" src="" alt="Receipt preview">
+                                <p id="preview-filename"></p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="receipt-text">Items (one per line) *</label>
-                        <textarea id="receipt-text" rows="10" placeholder="Milk, 14, 7
-Eggs, 21, 14
-Bread, 7, 5
-Cottage Cheese, 60, 7" required></textarea>
+                        <label for="receipt-date">Purchase Date (optional - will try to extract from receipt)</label>
+                        <input type="date" id="receipt-date">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Add All Items</button>
+                    <div id="processing-status" class="processing-status" style="display: none;">
+                        <div class="spinner"></div>
+                        <p id="processing-message">Processing receipt...</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="scan-receipt-btn">Scan Receipt & Add Items</button>
                 </form>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="manual-receipt-entry">
+                    <h3>Enter Items Manually</h3>
+                    <p class="help-text">Type or paste items from your receipt (one per line)</p>
+                    <div class="form-group">
+                        <textarea id="receipt-text" rows="8" placeholder="Milk
+Eggs
+Bread
+Cottage Cheese
+Blueberries"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="manual-receipt-btn">Add These Items</button>
+                </div>
             </div>
         </div>
 
@@ -155,6 +180,18 @@ Cottage Cheese, 60, 7" required></textarea>
         </div>
     </div>
 
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        }
+    </script>
+
+    <!-- Application Scripts -->
+    <script src="food-database.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,19 +1,20 @@
 # 🍎 Food Inventory Tracker
 
-A simple, mobile-friendly web application to help you track your groceries and reduce food waste. Never let food expire again!
+A smart, mobile-friendly web application that helps you track your groceries and reduce food waste. Features **automatic shelf life estimation** for 200+ common foods and **intelligent receipt scanning** with OCR technology!
 
-## Features
+## ✨ Key Features
 
-- **📝 Manual Entry**: Add food items one at a time with detailed information
-- **🧾 Receipt Import**: Quickly add multiple items from your grocery receipt
-- **📅 Expiration Tracking**: Automatic calculation of expiration dates
-- **🔓 Opened/Unopened Status**: Track when items are opened (many foods have different shelf lives once opened)
+- **🤖 Automatic Shelf Life Estimation**: Just enter the food name - the app automatically knows how long it lasts!
+- **📸 Smart Receipt Scanning**: Upload a photo or PDF of your receipt and the app extracts all the items
+- **📅 Expiration Tracking**: Automatic calculation of expiration dates based on food science guidelines
+- **🔓 Opened/Unopened Status**: Different shelf lives for opened vs unopened items (e.g., cottage cheese: 60 days unopened, 7 days opened)
 - **🔍 Search & Filter**: Find items quickly with search and category filters
 - **📊 Dashboard Stats**: See at a glance how many items are fresh, expiring soon, or expired
 - **📱 Responsive Design**: Works perfectly on phones, tablets, and desktops
 - **💾 Local Storage**: All data is saved in your browser (no account needed)
+- **🎯 Smart Food Database**: Built-in knowledge of 200+ common grocery items with USDA-based shelf lives
 
-## How to Use
+## 🚀 How to Use
 
 ### Getting Started
 
@@ -24,34 +25,43 @@ A simple, mobile-friendly web application to help you track your groceries and r
 
 1. Go to the **Add Manually** tab
 2. Fill in the food item details:
-   - **Food Name**: e.g., "Cottage Cheese"
-   - **Category**: Select from Dairy, Produce, Meat, Pantry, Frozen, Beverages, or Other
+   - **Food Name**: e.g., "Cottage Cheese" or "Blueberries"
+   - **Category**: Optionally select from Dairy, Produce, Meat, Pantry, Frozen, Beverages, or Other
    - **Purchase Date**: When you bought it
-   - **Unopened Shelf Life**: How many days it lasts unopened (e.g., 60 days)
-   - **Opened Shelf Life**: How many days it lasts after opening (e.g., 7 days)
    - **Quantity**: How many you have (default: 1)
    - **Mark as already opened**: Check this if you've already opened the item
 3. Click **Add to Inventory**
 
-### Adding Items from Receipt
+**The app automatically estimates shelf life!** No need to look up how long each food lasts - it already knows!
+
+### Scanning a Receipt (Recommended!)
 
 1. Go to the **From Receipt** tab
-2. Enter the purchase date
-3. Type or paste items, one per line, in this format:
-   ```
-   Item Name, Unopened Days, Opened Days
-   ```
-   Examples:
-   ```
-   Milk, 14, 7
-   Eggs, 21, 14
-   Bread, 7, 5
-   Cottage Cheese, 60, 7
-   ```
+2. Upload your receipt:
+   - **Take a photo** of your receipt with your phone
+   - **Upload a PDF** receipt from an online order
+   - Or **drag and drop** the file into the upload area
+3. Optionally enter the purchase date (the app will try to extract it from the receipt)
+4. Click **Scan Receipt & Add Items**
+5. The app will:
+   - Extract all food items from the receipt using OCR
+   - Automatically look up shelf life for each item
+   - Add everything to your inventory in seconds!
 
-   **Tip**: If you just type the item name (e.g., `Milk`), it will use default values (30 days unopened, 7 days opened)
+### Manual Receipt Entry (Alternative)
 
-4. Click **Add All Items**
+If receipt scanning doesn't work perfectly, you can also:
+1. Scroll down to "Enter Items Manually"
+2. Type or paste food names (one per line):
+   ```
+   Milk
+   Eggs
+   Bread
+   Blueberries
+   Cottage Cheese
+   ```
+3. Click **Add These Items**
+4. The app will automatically estimate shelf life for each item!
 
 ### Viewing Your Inventory
 
@@ -72,57 +82,81 @@ A simple, mobile-friendly web application to help you track your groceries and r
 - **Mark as Opened**: Click this button when you open an unopened item. The expiration date will automatically recalculate based on the opened shelf life.
 - **Delete**: Remove items from your inventory when they're consumed or discarded.
 
-## Understanding Expiration Status
+## 🍏 Understanding Automatic Shelf Life
+
+The app has a built-in database of 200+ common grocery items with shelf lives based on **USDA FoodKeeper** and **FDA guidelines**. Here are some examples:
+
+### Dairy
+- **Milk**: 7 days unopened, 5 days opened
+- **Yogurt**: 21 days unopened, 7 days opened
+- **Cottage Cheese**: 14 days unopened, 7 days opened
+- **Hard Cheese (Cheddar)**: 90 days unopened, 21 days opened
+
+### Produce
+- **Blueberries**: 10 days (in fridge)
+- **Strawberries**: 5 days
+- **Lettuce**: 7 days unopened, 5 days opened
+- **Carrots**: 21 days
+- **Bananas**: 5 days (counter)
+
+### Meat & Seafood
+- **Chicken Breast**: 2 days unopened, 1 day opened
+- **Ground Beef**: 2 days unopened, 1 day opened
+- **Salmon**: 2 days unopened, 1 day opened
+- **Bacon**: 14 days unopened, 7 days opened
+
+### Pantry
+- **Bread**: 7 days unopened, 5 days opened
+- **Pasta**: 730 days (2 years) unopened, 365 days opened
+- **Rice**: 730 days unopened, 365 days opened
+- **Peanut Butter**: 365 days unopened, 90 days opened
+
+### Frozen
+- **Frozen Vegetables**: 365 days unopened, 180 days opened
+- **Ice Cream**: 60 days unopened, 30 days opened
+- **Frozen Pizza**: 365 days unopened, 30 days opened
+
+**Don't see your food?** Don't worry! The app uses smart matching:
+- It recognizes variations (e.g., "whole milk", "2% milk", "skim milk")
+- It matches partial names (e.g., "organic blueberries" → "blueberries")
+- If it can't find an exact match, it uses safe default values (7 days unopened, 5 days opened)
+
+## 🎨 Understanding Expiration Status
 
 Items are color-coded based on their expiration status:
 
-- 🟢 **Green (Fresh)**: 4+ days until expiration
-- 🟡 **Yellow (Expiring Soon)**: 1-3 days until expiration
-- 🔴 **Red (Expired)**: Past expiration date
+- 🟢 **Green (Fresh)**: 4+ days until expiration - all good!
+- 🟡 **Yellow (Expiring Soon)**: 1-3 days until expiration - use soon!
+- 🔴 **Red (Expired)**: Past expiration date - discard or compost
 
-## Common Shelf Life Guidelines
+## 💡 Pro Tips
 
-Here are some typical shelf lives to help you get started:
+1. **Scan receipts immediately**: When you get home from the store, scan your receipt right away for instant tracking
+2. **Take clear photos**: For best OCR results, make sure the receipt is flat and well-lit
+3. **Review scanned items**: After scanning, check the inventory tab to make sure everything was captured correctly
+4. **Mark items as opened**: Always mark items as opened right away for accurate expiration tracking
+5. **Check daily**: Make it a habit to check your inventory daily to see what needs to be used soon
+6. **Use categories**: Categories help you find items faster (auto-assigned based on food type)
+7. **Mobile-friendly**: Add the website to your phone's home screen for quick access while cooking
 
-### Dairy
-- **Milk**: Unopened 14 days, Opened 7 days
-- **Yogurt**: Unopened 21 days, Opened 7 days
-- **Cottage Cheese**: Unopened 60 days, Opened 7 days
-- **Hard Cheese**: Unopened 90 days, Opened 30 days
+## 🔬 Technical Details
 
-### Produce
-- **Lettuce**: 7 days
-- **Berries**: 5 days
-- **Apples**: 30 days
-- **Carrots**: 21 days
+### Technologies Used
+- **HTML/CSS/JavaScript**: Pure vanilla JS, no complex frameworks
+- **Tesseract.js**: OCR (Optical Character Recognition) for extracting text from images
+- **PDF.js**: PDF parsing and text extraction
+- **Local Storage**: Browser-based data persistence
+- **Responsive CSS Grid/Flexbox**: Mobile-first responsive design
 
-### Meat & Seafood
-- **Ground Beef**: Unopened 2 days, Cooked 3 days
-- **Chicken Breast**: Unopened 2 days, Cooked 4 days
-- **Fish**: Unopened 2 days, Cooked 3 days
+### Features
+- **200+ Food Database**: Comprehensive shelf life data based on USDA FoodKeeper
+- **Smart Food Matching**: Fuzzy matching algorithm to recognize food name variations
+- **OCR Processing**: Extracts items and dates from receipt photos and PDFs
+- **Automatic Date Extraction**: Tries to find the purchase date on the receipt
+- **No Server Required**: Runs entirely in your browser, works offline
+- **Privacy First**: Your data never leaves your device
 
-### Pantry
-- **Bread**: 7 days
-- **Crackers**: Unopened 180 days, Opened 30 days
-- **Cereal**: Unopened 365 days, Opened 60 days
-
-## Tips for Best Results
-
-1. **Be Conservative**: When in doubt, use shorter shelf lives to be safe
-2. **Update Regularly**: Check your inventory daily to catch items before they expire
-3. **Mark as Opened**: Always mark items as opened right away for accurate tracking
-4. **Use Categories**: Organize items by category to find them faster
-5. **Delete Consumed Items**: Keep your inventory up-to-date by removing items you've eaten
-
-## Technical Details
-
-- **No Installation Required**: Just open `index.html` in any modern web browser
-- **No Internet Needed**: Works completely offline after initial load
-- **No Account Required**: All data is stored locally in your browser
-- **Data Persistence**: Your inventory is saved automatically and will be there when you return
-- **Privacy**: Your data never leaves your device
-
-## Browser Compatibility
+## 🌐 Browser Compatibility
 
 Works with all modern browsers:
 - Chrome/Edge (recommended)
@@ -130,7 +164,12 @@ Works with all modern browsers:
 - Safari
 - Opera
 
-## Hosting on GitHub Pages
+**Note**: Receipt scanning requires a modern browser that supports:
+- File API
+- Canvas API
+- Web Workers (for OCR processing)
+
+## 📤 Hosting on GitHub Pages
 
 To make this website available online:
 
@@ -140,7 +179,9 @@ To make this website available online:
 4. Click **Save**
 5. Your website will be available at: `https://yourusername.github.io/fuel/`
 
-## Data Management
+**Tip**: Add a bookmark to your phone's home screen for quick access!
+
+## 🛠️ Data Management
 
 ### Backing Up Your Data
 
@@ -165,18 +206,42 @@ To start fresh:
 3. Type: `localStorage.removeItem('foodInventory')`
 4. Refresh the page
 
-## Contributing
+## 📁 Project Structure
 
-Feel free to customize this application to fit your needs! The code is organized as follows:
+```
+fuel/
+├── index.html          # Main HTML structure
+├── style.css           # Responsive styling
+├── script.js           # Main application logic with OCR
+├── food-database.js    # 200+ food shelf life database
+└── README.md           # This file
+```
 
-- `index.html` - Main structure and layout
-- `style.css` - All styling and responsive design
-- `script.js` - All functionality and data management
+## 🤝 Contributing
 
-## License
+Want to add more foods to the database? The food data is in `food-database.js`. Feel free to add more items or improve the shelf life estimates based on food safety guidelines!
+
+## 🔒 Privacy & Security
+
+- **100% Client-Side**: All processing happens in your browser
+- **No Data Collection**: We don't collect, store, or transmit any of your data
+- **Local Storage Only**: Your inventory is saved only on your device
+- **No Cookies**: No tracking or analytics
+- **OCR Processing**: Receipt text extraction happens entirely in your browser
+
+## 📝 License
 
 Free to use and modify for personal or commercial purposes.
 
+## 🙏 Credits
+
+- **Shelf Life Data**: Based on USDA FoodKeeper and FDA food storage guidelines
+- **OCR Engine**: Tesseract.js by Naptha
+- **PDF Processing**: PDF.js by Mozilla
+- **Icons**: SVG icons for upload interface
+
 ---
 
-Happy tracking! 🎉 Never waste food again! 🥗
+**Happy tracking! 🎉 Never waste food again! 🥗**
+
+*Built with ❤️ to help reduce food waste and save money*
